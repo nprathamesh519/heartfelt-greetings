@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Fingerprint } from "lucide-react";
+import { Fingerprint, ShieldCheck } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const Auth: React.FC = () => {
   const { user, role, loading } = useAuth();
@@ -17,7 +18,7 @@ const Auth: React.FC = () => {
   const [signUpPassword, setSignUpPassword] = useState("");
   const [signUpName, setSignUpName] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, signOut } = useAuth();
 
   if (loading) {
     return (
@@ -30,7 +31,51 @@ const Auth: React.FC = () => {
   if (user) {
     if (role === "admin") return <Navigate to="/admin" replace />;
     if (role === "teacher") return <Navigate to="/teacher" replace />;
-    return <Navigate to="/" replace />;
+    const handleClaimAdmin = async () => {
+      setSubmitting(true);
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData?.session?.access_token;
+        const res = await supabase.functions.invoke("assign-role", {
+          body: { role: "admin" },
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
+        if (res.error) {
+          toast.error(res.error.message || "Failed to claim admin role");
+        } else {
+          toast.success("Admin role assigned! Reloading...");
+          setTimeout(() => window.location.reload(), 1000);
+        }
+      } catch (e) {
+        toast.error("Failed to claim admin role");
+      }
+      setSubmitting(false);
+    };
+
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md shadow-lg border-border/50">
+          <CardHeader className="text-center space-y-3">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-destructive/10">
+              <Fingerprint className="h-7 w-7 text-destructive" />
+            </div>
+            <CardTitle className="text-xl font-bold">No Role Assigned</CardTitle>
+            <CardDescription>
+              Your account does not have a role assigned yet. If you are the first user, you can claim the admin role below.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Button className="w-full" onClick={handleClaimAdmin} disabled={submitting}>
+              <ShieldCheck className="mr-2 h-4 w-4" />
+              {submitting ? "Assigning..." : "Claim Admin Role"}
+            </Button>
+            <Button variant="outline" className="w-full" onClick={() => { signOut(); }}>
+              Sign Out
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   const handleSignIn = async (e: React.FormEvent) => {
