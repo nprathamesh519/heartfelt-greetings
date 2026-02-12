@@ -27,7 +27,7 @@ const zktecoAdapter: DeviceAdapter = {
       userId: String(entry.pin || entry.user_id || entry.PIN),
       deviceId: String(entry.sn || entry.serial_number || entry.SN),
       timestamp: new Date(String(entry.timestamp || entry.time || entry.Timestamp)).toISOString(),
-      type: (Number(entry.status || entry.Status) === 0 ? "check-in" : "check-out") as "check-in" | "check-out",
+      type: (Number(entry.status ?? entry.Status ?? 0) === 0 ? "check-in" : "check-out") as "check-in" | "check-out",
     }));
   },
 };
