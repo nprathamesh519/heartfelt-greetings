@@ -1,0 +1,7 @@
+project_id = "uyoksdrpwlukwnklhwru"
+
+[functions.device-webhook]
+verify_jwt = false
+
+[functions.auto-sync]
+verify_jwt = false
